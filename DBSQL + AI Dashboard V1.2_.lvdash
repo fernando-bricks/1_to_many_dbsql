@@ -1,0 +1,1378 @@
+{
+  "datasets": [
+    {
+      "name": "f664e0dc",
+      "displayName": "dim_coffee_shop_stores",
+      "queryLines": [
+        "SELECT * FROM dim_coffee_shop_stores \n"
+      ],
+      "catalog": "users",
+      "schema": "fernando_vasquez"
+    },
+    {
+      "name": "96cc1da1",
+      "displayName": "dim_coffee_products",
+      "queryLines": [
+        "SELECT * FROM dim_coffee_products "
+      ],
+      "catalog": "users",
+      "schema": "fernando_vasquez"
+    },
+    {
+      "name": "010a208c",
+      "displayName": "fct_coffee_shop_transactions",
+      "queryLines": [
+        "SELECT * FROM fct_coffee_shop_transactions "
+      ],
+      "catalog": "users",
+      "schema": "fernando_vasquez"
+    },
+    {
+      "name": "416f99bc",
+      "displayName": "fct_coffee_shop_stores_reviews",
+      "queryLines": [
+        "SELECT * FROM fct_coffee_shop_stores_reviews \n"
+      ],
+      "catalog": "users",
+      "schema": "fernando_vasquez"
+    },
+    {
+      "name": "f532e50c",
+      "displayName": "Agg_1: Transactions, sales and quantity sold by store and month for 2023",
+      "queryLines": [
+        "SELECT \n",
+        "  store_name,\n",
+        "  product_detail,\n",
+        "  make_date(year(transaction_date), month(transaction_date), day(transaction_date)) AS month_day,\n",
+        "  SUM(transaction_id) AS total_transactions,\n",
+        "  ROUND(sum(transation_total),2) AS total_sales,\n",
+        "  SUM(transaction_qty) AS total_quantity_sold\n",
+        "FROM \n",
+        "  fct_coffee_shop_transactions\n",
+        "LEFT JOIN dim_coffee_shop_stores \n",
+        "  ON fct_coffee_shop_transactions.store_id = dim_coffee_shop_stores.store_id\n",
+        "LEFT JOIN dim_coffee_products \n",
+        "  ON fct_coffee_shop_transactions.product_id = dim_coffee_products.product_id\n",
+        "WHERE\n",
+        "  YEAR(transaction_date) = 2023\n",
+        "GROUP BY \n",
+        "  store_name,\n",
+        "  product_detail,\n",
+        "  month_day\n",
+        "ORDER BY \n",
+        "  store_name,\n",
+        "  month_day"
+      ],
+      "catalog": "users",
+      "schema": "fernando_vasquez"
+    },
+    {
+      "name": "9a274e21",
+      "displayName": "Agg_2: Top 10 sold products",
+      "queryLines": [
+        "SELECT\n",
+        "  product_detail,\n",
+        "  SUM(transaction_qty) AS total_quantity_sold\n",
+        "FROM\n",
+        "  fct_coffee_shop_transactions AS transactions\n",
+        "LEFT JOIN dim_coffee_products AS products \n",
+        "  ON transactions.product_id = products.product_id\n",
+        "GROUP BY\n",
+        "  product_detail\n",
+        "ORDER BY\n",
+        " total_quantity_sold DESC\n",
+        " limit 10\n"
+      ],
+      "catalog": "users",
+      "schema": "fernando_vasquez"
+    },
+    {
+      "name": "a98de72d",
+      "displayName": "Agg_3: Transactions and total sales per hour",
+      "queryLines": [
+        "SELECT\n",
+        "  store_name,\n",
+        "  HOUR(transaction_time) AS hour_of_day,\n",
+        "  SUM(transaction_qty) AS total_transactions_per_hour,\n",
+        "  ROUND(SUM(transation_total),2) AS total_store_sales_per_hour\n",
+        "FROM\n",
+        "  fct_coffee_shop_transactions AS transactions\n",
+        "LEFT JOIN dim_coffee_shop_stores AS stores\n",
+        "  ON transactions.store_id = stores.store_id \n",
+        "GROUP BY\n",
+        "  HOUR(transaction_time), store_name\n",
+        "ORDER BY\n",
+        " store_name, hour_of_day ASC"
+      ],
+      "catalog": "users",
+      "schema": "fernando_vasquez"
+    }
+  ],
+  "pages": [
+    {
+      "name": "0fa2afbc",
+      "displayName": "Corporate Coffee",
+      "layout": [
+        {
+          "widget": {
+            "name": "2ad97182",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "f532e50c",
+                  "fields": [
+                    {
+                      "name": "store_name",
+                      "expression": "`store_name`"
+                    },
+                    {
+                      "name": "weekly(month_day)",
+                      "expression": "DATE_TRUNC(\"WEEK\", `month_day`)"
+                    },
+                    {
+                      "name": "avg(total_sales)",
+                      "expression": "AVG(`total_sales`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "weekly(month_day)",
+                  "displayName": "month_day",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "avg(total_sales)",
+                  "displayName": "Average total_sales",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "store_name",
+                  "displayName": "store_name",
+                  "scale": {
+                    "type": "categorical",
+                    "mappings": [
+                      {
+                        "value": "Astoria Brews",
+                        "color": {
+                          "themeColorType": "selectionColor"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "frame": {
+                "title": "Weekly Average sales by Store",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "d6f1fc9e",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "f664e0dc",
+                  "fields": [
+                    {
+                      "name": "store_location",
+                      "expression": "`store_location`"
+                    },
+                    {
+                      "name": "store_name",
+                      "expression": "`store_name`"
+                    },
+                    {
+                      "name": "Store_description",
+                      "expression": "`Store_description`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "store_location",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 100001,
+                    "title": "store_location",
+                    "allowSearch": false,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "displayName": "store_location"
+                  },
+                  {
+                    "fieldName": "store_name",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 100002,
+                    "title": "store_name",
+                    "allowSearch": false,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "displayName": "store_name"
+                  },
+                  {
+                    "fieldName": "Store_description",
+                    "booleanValues": [
+                      "false",
+                      "true"
+                    ],
+                    "imageUrlTemplate": "{{ @ }}",
+                    "imageTitleTemplate": "{{ @ }}",
+                    "imageWidth": "",
+                    "imageHeight": "",
+                    "linkUrlTemplate": "{{ @ }}",
+                    "linkTextTemplate": "{{ @ }}",
+                    "linkTitleTemplate": "{{ @ }}",
+                    "linkOpenInNewTab": true,
+                    "type": "string",
+                    "displayAs": "string",
+                    "visible": true,
+                    "order": 100003,
+                    "title": "Store_description",
+                    "allowSearch": false,
+                    "alignContent": "left",
+                    "allowHTML": false,
+                    "highlightLinks": false,
+                    "useMonospaceFont": false,
+                    "preserveWhitespace": false,
+                    "displayName": "Store_description"
+                  }
+                ]
+              },
+              "invisibleColumns": [
+                {
+                  "numberFormat": "0",
+                  "booleanValues": [
+                    "false",
+                    "true"
+                  ],
+                  "imageUrlTemplate": "{{ @ }}",
+                  "imageTitleTemplate": "{{ @ }}",
+                  "imageWidth": "",
+                  "imageHeight": "",
+                  "linkUrlTemplate": "{{ @ }}",
+                  "linkTextTemplate": "{{ @ }}",
+                  "linkTitleTemplate": "{{ @ }}",
+                  "linkOpenInNewTab": true,
+                  "name": "store_id",
+                  "type": "integer",
+                  "displayAs": "number",
+                  "order": 100000,
+                  "title": "store_id",
+                  "allowSearch": false,
+                  "alignContent": "right",
+                  "allowHTML": false,
+                  "highlightLinks": false,
+                  "useMonospaceFont": false,
+                  "preserveWhitespace": false
+                }
+              ],
+              "allowHTMLByDefault": false,
+              "itemsPerPage": 25,
+              "paginationSize": "default",
+              "condensed": true,
+              "withRowNumber": false,
+              "frame": {
+                "title": "Store Descriptions",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 6,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "28cfaf31",
+            "multilineTextboxSpec": {
+              "lines": [
+                "Welcome to the Coffee Cop Insights Dashboards. Let's brew some coffee! "
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "63b26147",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "f532e50c",
+                  "fields": [
+                    {
+                      "name": "product_detail",
+                      "expression": "`product_detail`"
+                    },
+                    {
+                      "name": "store_name",
+                      "expression": "`store_name`"
+                    },
+                    {
+                      "name": "sum(total_sales)",
+                      "expression": "SUM(`total_sales`)"
+                    }
+                  ],
+                  "cubeGroupingSets": {
+                    "sets": [
+                      {
+                        "fieldNames": [
+                          "product_detail"
+                        ]
+                      },
+                      {
+                        "fieldNames": [
+                          "store_name"
+                        ]
+                      }
+                    ]
+                  },
+                  "disaggregated": false,
+                  "orders": [
+                    {
+                      "direction": "ASC",
+                      "expression": "`product_detail`"
+                    },
+                    {
+                      "direction": "ASC",
+                      "expression": "`store_name`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pivot",
+              "encodings": {
+                "rows": [
+                  {
+                    "fieldName": "product_detail",
+                    "scale": {
+                      "type": "categorical",
+                      "sort": {
+                        "by": "custom-order",
+                        "orderedValues": [
+                          "Almond Croissant",
+                          "Brazilian - Organic",
+                          "Brazilian Lg",
+                          "Brazilian Rg",
+                          "Brazilian Sm",
+                          "Cappuccino",
+                          "Cappuccino Lg",
+                          "Carmel syrup",
+                          "Chili Mayan",
+                          "Chocolate Chip Biscotti",
+                          "Chocolate Croissant",
+                          "Chocolate syrup",
+                          "Civet Cat",
+                          "Columbian Medium Roast",
+                          "Columbian Medium Roast Lg",
+                          "Columbian Medium Roast Rg",
+                          "Columbian Medium Roast Sm",
+                          "Cranberry Scone",
+                          "Croissant",
+                          "Dark chocolate",
+                          "Dark chocolate Lg",
+                          "Dark chocolate Rg",
+                          "Earl Grey",
+                          "Earl Grey Lg",
+                          "Earl Grey Rg",
+                          "English Breakfast",
+                          "English Breakfast Lg",
+                          "English Breakfast Rg",
+                          "Espresso Roast",
+                          "Espresso shot",
+                          "Ethiopia",
+                          "Ethiopia Lg",
+                          "Ethiopia Rg",
+                          "Ethiopia Sm",
+                          "Ginger Biscotti",
+                          "Ginger Scone",
+                          "Guatemalan Sustainably Grown",
+                          "Hazelnut Biscotti",
+                          "Hazelnut syrup",
+                          "I Need My Bean! Diner mug",
+                          "I Need My Bean! Latte cup",
+                          "I Need My Bean! T-shirt",
+                          "Jamacian Coffee River",
+                          "Jamaican Coffee River Lg",
+                          "Jamaican Coffee River Rg",
+                          "Jamaican Coffee River Sm",
+                          "Jumbo Savory Scone",
+                          "Latte",
+                          "Lemon Grass",
+                          "Lemon Grass Lg",
+                          "Lemon Grass Rg",
+                          "Oatmeal Scone",
+                          "Organic Decaf Blend",
+                          "Our Old Time Diner Blend",
+                          "Our Old Time Diner Blend Lg",
+                          "Our Old Time Diner Blend Rg",
+                          "Our Old Time Diner Blend Sm",
+                          "Ouro Brasileiro shot",
+                          "Peppermint Lg",
+                          "Peppermint Rg",
+                          "Primo Espresso Roast",
+                          "Scottish Cream Scone ",
+                          "Serenity Green Tea Lg"
+                        ]
+                      }
+                    },
+                    "displayName": "Store"
+                  }
+                ],
+                "columns": [
+                  {
+                    "fieldName": "store_name"
+                  }
+                ],
+                "cell": {
+                  "type": "multi-cell",
+                  "fields": [
+                    {
+                      "fieldName": "sum(total_sales)",
+                      "cellType": "text",
+                      "format": {
+                        "type": "number-plain",
+                        "abbreviation": "none",
+                        "decimalPlaces": {
+                          "type": "exact",
+                          "places": 2
+                        },
+                        "hideGroupSeparator": true
+                      },
+                      "style": {
+                        "type": "basic",
+                        "rules": [
+                          {
+                            "condition": {
+                              "operator": "<",
+                              "operand": {
+                                "type": "data-value",
+                                "value": "600"
+                              }
+                            },
+                            "backgroundColor": {
+                              "themeColorType": "visualizationColors",
+                              "position": 4
+                            }
+                          }
+                        ]
+                      },
+                      "displayName": "Total Sales"
+                    }
+                  ]
+                }
+              },
+              "frame": {
+                "title": "Review Distribution for 2023",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 10,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "3d90aa71",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "a98de72d",
+                  "fields": [
+                    {
+                      "name": "sum(total_store_sales_per_hour)",
+                      "expression": "SUM(`total_store_sales_per_hour`)"
+                    },
+                    {
+                      "name": "hour_of_day",
+                      "expression": "`hour_of_day`"
+                    },
+                    {
+                      "name": "store_name",
+                      "expression": "`store_name`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "heatmap",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour_of_day",
+                  "scale": {
+                    "type": "quantitative",
+                    "domain": {
+                      "min": 6,
+                      "max": 20
+                    }
+                  },
+                  "axis": {
+                    "title": "Time of day"
+                  }
+                },
+                "y": {
+                  "fieldName": "store_name",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "Stores"
+                },
+                "color": {
+                  "fieldName": "sum(total_store_sales_per_hour)",
+                  "scale": {
+                    "type": "quantitative",
+                    "colorRamp": {
+                      "mode": "scheme",
+                      "scheme": "purplegreen"
+                    }
+                  },
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "displayName": "Total Sales"
+                },
+                "label": {
+                  "show": false
+                }
+              },
+              "frame": {
+                "title": "Total Transactions Per Hour",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 10,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "8d97b9db",
+            "queries": [
+              {
+                "name": "dashboards/01f085ca0efc18fbad817e978ebd6f4f/datasets/01f085cb0590187c8bafa48679abd9ed_store_name",
+                "query": {
+                  "datasetName": "f664e0dc",
+                  "fields": [
+                    {
+                      "name": "store_name",
+                      "expression": "`store_name`"
+                    },
+                    {
+                      "name": "store_name_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f085ca0efc18fbad817e978ebd6f4f/datasets/01f085ca35a41b1a879a625746fc198b_store_name",
+                "query": {
+                  "datasetName": "f532e50c",
+                  "fields": [
+                    {
+                      "name": "store_name",
+                      "expression": "`store_name`"
+                    },
+                    {
+                      "name": "store_name_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f085ca0efc18fbad817e978ebd6f4f/datasets/01f085cbddd317c7a69cdd45d332a864_store_name",
+                "query": {
+                  "datasetName": "a98de72d",
+                  "fields": [
+                    {
+                      "name": "store_name",
+                      "expression": "`store_name`"
+                    },
+                    {
+                      "name": "store_name_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "store_name",
+                    "displayName": "store_name",
+                    "queryName": "dashboards/01f085ca0efc18fbad817e978ebd6f4f/datasets/01f085cb0590187c8bafa48679abd9ed_store_name"
+                  },
+                  {
+                    "fieldName": "store_name",
+                    "displayName": "store_name",
+                    "queryName": "dashboards/01f085ca0efc18fbad817e978ebd6f4f/datasets/01f085ca35a41b1a879a625746fc198b_store_name"
+                  },
+                  {
+                    "fieldName": "store_name",
+                    "displayName": "store_name",
+                    "queryName": "dashboards/01f085ca0efc18fbad817e978ebd6f4f/datasets/01f085cbddd317c7a69cdd45d332a864_store_name"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "c0541e58",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "9a274e21",
+                  "fields": [
+                    {
+                      "name": "product_detail",
+                      "expression": "`product_detail`"
+                    },
+                    {
+                      "name": "sum(total_quantity_sold)",
+                      "expression": "SUM(`total_quantity_sold`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "product_detail",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
+                  },
+                  "axis": {
+                    "labelAngle": 0,
+                    "title": "ID TI"
+                  }
+                },
+                "y": {
+                  "primary": {
+                    "fields": [
+                      {
+                        "fieldName": "sum(total_quantity_sold)"
+                      }
+                    ],
+                    "scale": {
+                      "type": "quantitative",
+                      "reverse": false
+                    },
+                    "axis": {
+                      "title": "Total Transactions"
+                    }
+                  },
+                  "secondary": {
+                    "fields": [],
+                    "scale": {
+                      "type": "quantitative"
+                    }
+                  }
+                }
+              },
+              "frame": {
+                "title": "Transaction Quantity by Product",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 16,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "783a8f9c",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "f664e0dc",
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {}
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 16,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "24ee90f2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "f664e0dc",
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {}
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 22,
+            "width": 3,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    },
+    {
+      "name": "94b8fde0",
+      "displayName": "Global Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "b3ff807c",
+            "queries": [
+              {
+                "name": "dashboards/01f085ca0efc18fbad817e978ebd6f4f/datasets/01f085cb0590187c8bafa48679abd9ed_store_name",
+                "query": {
+                  "datasetName": "f664e0dc",
+                  "fields": [
+                    {
+                      "name": "store_name",
+                      "expression": "`store_name`"
+                    },
+                    {
+                      "name": "store_name_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f085ca0efc18fbad817e978ebd6f4f/datasets/01f085ca35a41b1a879a625746fc198b_store_name",
+                "query": {
+                  "datasetName": "f532e50c",
+                  "fields": [
+                    {
+                      "name": "store_name",
+                      "expression": "`store_name`"
+                    },
+                    {
+                      "name": "store_name_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "store_name",
+                    "displayName": "store_name",
+                    "queryName": "dashboards/01f085ca0efc18fbad817e978ebd6f4f/datasets/01f085cb0590187c8bafa48679abd9ed_store_name"
+                  },
+                  {
+                    "fieldName": "store_name",
+                    "displayName": "store_name",
+                    "queryName": "dashboards/01f085ca0efc18fbad817e978ebd6f4f/datasets/01f085ca35a41b1a879a625746fc198b_store_name"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Store"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "b9bea230",
+            "queries": [
+              {
+                "name": "dashboards/01f085ca0efc18fbad817e978ebd6f4f/datasets/01f085cb1f7112839c6045f1142dcf18_product_detail",
+                "query": {
+                  "datasetName": "96cc1da1",
+                  "fields": [
+                    {
+                      "name": "product_detail",
+                      "expression": "`product_detail`"
+                    },
+                    {
+                      "name": "product_detail_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "product_detail",
+                    "displayName": "product_detail",
+                    "queryName": "dashboards/01f085ca0efc18fbad817e978ebd6f4f/datasets/01f085cb1f7112839c6045f1142dcf18_product_detail"
+                  }
+                ]
+              },
+              "frame": {
+                "showTitle": true,
+                "title": "Product Name"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 1,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS"
+    },
+    {
+      "name": "85761a3f",
+      "displayName": "Marketing",
+      "layout": [
+        {
+          "widget": {
+            "name": "d595b30f",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "f532e50c",
+                  "fields": [
+                    {
+                      "name": "weekly(month_day)",
+                      "expression": "DATE_TRUNC(\"WEEK\", `month_day`)"
+                    },
+                    {
+                      "name": "avg(total_sales)",
+                      "expression": "AVG(`total_sales`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "weekly(month_day)",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Week"
+                },
+                "y": {
+                  "fieldName": "avg(total_sales)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Present"
+                },
+                "label": {
+                  "show": false
+                }
+              },
+              "frame": {
+                "title": "Weekly Average sales of the chain ",
+                "showTitle": true
+              },
+              "annotations": [
+                {
+                  "type": "vertical-line",
+                  "encodings": {
+                    "x": {
+                      "dataValue": "2023-03-26T00:00:00.000",
+                      "dataType": "DATETIME"
+                    },
+                    "label": {
+                      "value": "First Marketing Campaing"
+                    }
+                  }
+                },
+                {
+                  "type": "vertical-line",
+                  "encodings": {
+                    "x": {
+                      "dataValue": "2023-06-25T00:00:00.000",
+                      "dataType": "DATETIME"
+                    },
+                    "label": {
+                      "value": "Today"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "28da4f69",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "9a274e21",
+                  "fields": [
+                    {
+                      "name": "product_detail",
+                      "expression": "`product_detail`"
+                    },
+                    {
+                      "name": "sum(total_quantity_sold)",
+                      "expression": "SUM(`total_quantity_sold`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "product_detail",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "y-reversed"
+                    }
+                  },
+                  "axis": {},
+                  "displayName": "product_detail"
+                },
+                "y": {
+                  "fieldName": "sum(total_quantity_sold)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Sum of total_quantity_sold"
+                },
+                "color": {
+                  "fieldName": "product_detail",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "product_detail"
+                },
+                "label": {
+                  "show": false
+                }
+              },
+              "frame": {
+                "title": "Product Sales Distribution",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "beffd949",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "a98de72d",
+                  "fields": [
+                    {
+                      "name": "hour_of_day",
+                      "expression": "`hour_of_day`"
+                    },
+                    {
+                      "name": "total_transactions_per_hour",
+                      "expression": "`total_transactions_per_hour`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "hour_of_day",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "hour_of_day"
+                },
+                "y": {
+                  "fieldName": "total_transactions_per_hour",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "total_transactions_per_hour"
+                }
+              },
+              "frame": {
+                "title": "Total Transactions Per Hour",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 2,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "1432165f",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "416f99bc",
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(*)",
+                  "displayName": "Count of Records"
+                }
+              },
+              "frame": {
+                "title": "Total Reviews",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "a9a88e4a",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "96cc1da1",
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(*)",
+                  "displayName": "Count of Records"
+                }
+              },
+              "frame": {
+                "title": "Coffee Products",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "3c533ebd",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "010a208c",
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(*)",
+                  "displayName": "Count of Records"
+                }
+              },
+              "frame": {
+                "title": "Transactions",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 0,
+            "width": 4,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "12b22bf8",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "416f99bc",
+                  "fields": [
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    },
+                    {
+                      "name": "sentiment",
+                      "expression": "`sentiment`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "count(*)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Count of Records"
+                },
+                "color": {
+                  "fieldName": "sentiment",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "sentiment"
+                }
+              },
+              "frame": {
+                "title": "Total Reviews by Store",
+                "showTitle": true
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "genieSpace": {
+      "isEnabled": true,
+      "overrideId": "01f0af74083317e8839398d87d5f32f5",
+      "enablementMode": "ENABLED"
+    },
+    "applyModeEnabled": false
+  }
+}
